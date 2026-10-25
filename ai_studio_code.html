@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROCCA | Sistema Provincial de Trazabilidad Comercial y Fiscalización Cárnica</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js para Estadísticas Estratégicas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            procarne: {
+              50: '#FDF2F3',
+              100: '#FCE7E9',
+              200: '#F8D2D6',
+              500: '#C22338',
+              600: '#A91B2F',
+              700: '#8B1425',
+              800: '#731321',
+              900: '#540D17',
+              dark: '#3A080E'
+            },
+            sgo: {
+              navy: '#0F1E36',
+              blue: '#1E3A8A',
+              gold: '#D97706',
+              surface: '#F8FAFC'
+            },
+            agrotraza: {
+              green: '#059669',
+              emerald: '#047857'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .tab-active {
+      border-color: #8B1425;
+      color: #8B1425;
+      background-color: #FDF2F3;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- ================= TOPBAR INSTITUCIONAL ================= -->
+  <header class="bg-gradient-to-r from-sgo-navy via-slate-900 to-procarne-900 text-white shadow-md border-b-2 border-procarne-700">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
+      <!-- Marca & Subsecretaría -->
+      <div class="flex items-center space-x-4">
+        <div class="w-12 h-12 rounded-lg bg-procarne-700 flex items-center justify-center font-bold text-white shadow-inner border border-procarne-500 text-xl tracking-wider">
+          R
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs uppercase tracking-widest font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">
+              Gobierno de Santiago del Estero
+            </span>
+            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> AGROTRAZA Integrado
+            </span>
+          </div>
+          <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            ROCCA <span class="text-xs font-normal text-slate-300 hidden md:inline">| Registro de Operadores y Control de la Cadena Cárnica</span>
+          </h1>
+          <p class="text-[11px] text-slate-300">Dirección General de Agricultura y Ganadería • ProCarne Fiscalización</p>
+        </div>
+      </div>
+
+      <!-- Estado de Cruce Federal & Nodo Provincial -->
+      <div class="flex items-center gap-3 text-xs bg-black/30 backdrop-blur-md px-3 py-2 rounded-lg border border-white/10">
+        <div class="flex flex-col text-right">
+          <span class="font-medium text-slate-200">Interconexión Federal Activa</span>
+          <span class="text-[10px] text-slate-400">ARCA (REC) • SENASA (SIGSA) • SDE AGROTRAZA</span>
+        </div>
+        <div class="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]"></div>
+      </div>
+    </div>
+
+    <!-- Navegación por Módulos -->
+    <nav class="bg-white border-t border-slate-200 px-4 sm:px-6 lg:px-8 shadow-sm">
+      <div class="max-w-7xl mx-auto flex space-x-1 sm:space-x-4 overflow-x-auto py-2 text-sm text-slate-600 font-medium">
+        <button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="tab-btn px-3 py-2 rounded-md transition flex items-center gap-2 tab-active">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Módulo IV: Monitor Estratégico
+        </button>
+        <button onclick="switchTab('operadores')" id="btn-tab-operadores" class="tab-btn px-3 py-2 rounded-md transition flex items-center gap-2 hover:bg-slate-100">
+          <i data-lucide="users" class="w-4 h-4"></i> Módulo I: Operadores
+        </button>
+        <button onclick="switchTab('movimientos')" id="btn-tab-movimientos" class="tab-btn px-3 py-2 rounded-md transition flex items-center gap-2 hover:bg-slate-100">
+          <i data-lucide="truck" class="w-4 h-4"></i> Módulos II & VII: Remitos REC y Tránsito
+        </button>
+        <button onclick="switchTab('fiscalizacion')" id="btn-tab-fiscalizacion" class="tab-btn px-3 py-2 rounded-md transition flex items-center gap-2 hover:bg-slate-100">
+          <i data-lucide="shield-alert" class="w-4 h-4"></i> Módulo III: Fiscalización en Ruta
+        </button>
+        <button onclick="switchTab('incentivos')" id="btn-tab-incentivos" class="tab-btn px-3 py-2 rounded-md transition flex items-center gap-2 hover:bg-slate-100">
+          <i data-lucide="award" class="w-4 h-4"></i> Módulo VI: Faena en Origen
+        </button>
+        <button onclick="switchTab('portal')" id="btn-tab-portal" class="tab-btn px-3 py-2 rounded-md transition flex items-center gap-2 hover:bg-slate-100">
+          <i data-lucide="qr-code" class="w-4 h-4"></i> Módulo V: Portal Público
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ================= CONTENEDOR PRINCIPAL ================= -->
+  <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ==================== PESTAÑA: DASHBOARD ESTRATÉGICO ==================== -->
+    <div id="view-dashboard" class="module-view space-y-6">
+      
+      <!-- Banner Balance de Masa & AGROTRAZA -->
+      <div class="bg-gradient-to-r from-procarne-800 to-procarne-900 text-white rounded-xl p-5 shadow-lg relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="space-y-1 relative z-10 max-w-2xl">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Convenio ExpoBRA Activo (Sept 2026)
+          </span>
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight">Balance Dinámico de la Cadena Cárnica Provincial</h2>
+          <p class="text-xs text-slate-200">
+            Integración en tiempo real de Remitos REC (ARCA), DTE ganadero (SIGSA) y trazabilidad fitosanitaria/ambiental (AGROTRAZA - Ley 27.279).
+          </p>
+        </div>
+        <div class="flex items-center gap-3 relative z-10">
+          <button onclick="openModal('modal-rec')" class="px-4 py-2 bg-white text-procarne-900 font-bold rounded-lg text-xs shadow hover:bg-slate-100 transition flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4 text-procarne-700"></i> Declarar Ingreso / REC
+          </button>
+          <button onclick="openModal('modal-operativo')" class="px-4 py-2 bg-procarne-600 text-white font-bold rounded-lg text-xs shadow border border-procarne-400 hover:bg-procarne-500 transition flex items-center gap-2">
+            <i data-lucide="shield-check" class="w-4 h-4"></i> Nuevo Operativo
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarjetas KPIs -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Tarjeta 1 -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Faena Local Provincial</p>
+              <h3 class="text-2xl font-extrabold text-slate-800 mt-1">42,850 <span class="text-xs font-medium text-slate-500">cabezas</span></h3>
+            </div>
+            <div class="p-2.5 rounded-lg bg-procarne-50 text-procarne-700 border border-procarne-200">
+              <i data-lucide="beef" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center gap-2 text-xs">
+            <span class="text-emerald-600 font-bold flex items-center"><i data-lucide="trending-up" class="w-3.5 h-3.5 mr-0.5"></i> +12.4%</span>
+            <span class="text-slate-500">vs trimestre anterior</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta 2 -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Ingreso Extraprovincial</p>
+              <h3 class="text-2xl font-extrabold text-slate-800 mt-1">1,840.5 <span class="text-xs font-medium text-slate-500">Tn / Mes</span></h3>
+            </div>
+            <div class="p-2.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
+              <i data-lucide="map-pin-off" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center gap-2 text-xs">
+            <span class="text-amber-600 font-bold">58% prov. Córdoba / Sta Fe</span>
+            <span class="text-slate-500">bajo control REC</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta 3 -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Operadores Registrados</p>
+              <h3 class="text-2xl font-extrabold text-slate-800 mt-1">1,428</h3>
+            </div>
+            <div class="p-2.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
+              <i data-lucide="store" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center gap-2 text-xs">
+            <span class="text-blue-600 font-bold">94.2%</span>
+            <span class="text-slate-500">con habilitación vigente</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta 4: Decomisos y Fiscalización -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Decomisos Clandestinos</p>
+              <h3 class="text-2xl font-extrabold text-procarne-700 mt-1">7,480 <span class="text-xs font-medium text-slate-500">Kg</span></h3>
+            </div>
+            <div class="p-2.5 rounded-lg bg-red-50 text-red-700 border border-red-200">
+              <i data-lucide="alert-octagon" class="w-5 h-5"></i>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center gap-2 text-xs">
+            <span class="text-procarne-700 font-semibold">100% donado</span>
+            <span class="text-slate-500">según Art. 27 Ley 5.893/92</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos del Sistema Estratégico -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Gráfico 1: Faena Local vs Ingreso Foráneo -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm lg:col-span-2">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="font-bold text-slate-800 text-sm">Flujo Comercial: Faena en Frigoríficos Locales vs. Ingreso Extraprovincial</h3>
+              <p class="text-xs text-slate-500">Estimación de toneladas mensuales para incentivo al agregado de valor local</p>
+            </div>
+            <span class="text-xs bg-slate-100 text-slate-700 font-semibold px-2 py-1 rounded">2026</span>
+          </div>
+          <div class="h-64">
+            <canvas id="chartFlujos"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico 2: Composición por Especie y AGROTRAZA -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="font-bold text-slate-800 text-sm">Distribución por Especie</h3>
+              <p class="text-xs text-slate-500">Movimientos declarados en Santiago</p>
+            </div>
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          </div>
+          <div class="h-52 flex justify-center items-center">
+            <canvas id="chartEspecies"></canvas>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 text-center text-xs">
+            <div>
+              <p class="text-slate-500">Bovino / Porcino</p>
+              <p class="font-bold text-slate-800">82.5%</p>
+            </div>
+            <div>
+              <p class="text-slate-500">Caprino / Ovino</p>
+              <p class="font-bold text-emerald-600">17.5% Gourmet</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alertas en Tiempo Real de Fiscalización en Ruta -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <div class="p-1.5 rounded-lg bg-amber-100 text-amber-800">
+              <i data-lucide="radio" class="w-4 h-4 animate-ping"></i>
+            </div>
+            <h3 class="font-bold text-slate-800 text-sm">Monitoreo de Rutas & Puestos de Control (Ruta 34, 9 y Dpto. Banda)</h3>
+          </div>
+          <span class="text-xs text-slate-500">Actualizado hace 4 min</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 font-semibold">
+              <tr>
+                <th class="py-2.5 px-3">Puesto / Zona</th>
+                <th class="py-2.5 px-3">Vehículo / CUIT</th>
+                <th class="py-2.5 px-3">Mercadería</th>
+                <th class="py-2.5 px-3">Documentación</th>
+                <th class="py-2.5 px-3">Estado</th>
+                <th class="py-2.5 px-3 text-right">Acción</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+              <tr class="hover:bg-slate-50">
+                <td class="py-3 px-3 font-semibold text-slate-900">Palo Negro - RN 34</td>
+                <td class="py-3 px-3">Mercedes-Benz Térmico (AB-420-CD)</td>
+                <td class="py-3 px-3">24 Medias Reses Porcinas (1,890 kg)</td>
+                <td class="py-3 px-3">
+                  <span class="inline-flex items-center text-red-600 font-semibold gap-1">
+                    <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> REC Incompleto (Sin receptor)
+                  </span>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="px-2 py-0.5 rounded bg-red-100 text-red-800 font-bold text-[10px]">Intervenido / Decomiso</span>
+                </td>
+                <td class="py-3 px-3 text-right">
+                  <button class="text-procarne-700 hover:text-procarne-900 font-semibold">Ver Acta #8492</button>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="py-3 px-3 font-semibold text-slate-900">La Banda - Rotonda Autopista</td>
+                <td class="py-3 px-3">Scania R450 (AD-981-XP)</td>
+                <td class="py-3 px-3">Cortes Envasados al Vacío (4,200 kg)</td>
+                <td class="py-3 px-3">
+                  <span class="inline-flex items-center text-emerald-600 font-semibold gap-1">
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> REC Validado ARCA + DTE
+                  </span>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">Liberado en Tránsito</span>
+                </td>
+                <td class="py-3 px-3 text-right">
+                  <button class="text-slate-600 hover:text-slate-900">Detalles</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PESTAÑA: MÓDULO I - REGISTRO DE OPERADORES ==================== -->
+    <div id="view-operadores" class="module-view hidden space-y-6">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Módulo I: Registro Provincial de Operadores Cárnicos (ROCCA)</h2>
+            <p class="text-xs text-slate-500">Padrón unificado de Frigoríficos, Mataderos, Distribuidores, Matarifes y Carnicerías habilitadas.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-2 bg-procarne-700 hover:bg-procarne-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+              <i data-lucide="user-plus" class="w-4 h-4"></i> Inscribir Nuevo Operador
+            </button>
+            <button class="px-3 py-2 border border-slate-300 rounded-lg text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-1">
+              <i data-lucide="download" class="w-4 h-4"></i> Exportar Padrón
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtros y Búsqueda -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 py-4">
+          <div class="sm:col-span-2 relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+            <input type="text" id="filtro-operador" placeholder="Buscar por CUIT, Razón Social o N° Habilitación ProCarne..." class="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-procarne-700 focus:outline-none">
+          </div>
+          <div>
+            <select class="w-full py-2 px-3 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-procarne-700 focus:outline-none">
+              <option value="">Todas las Actividades</option>
+              <option>Frigorífico / Ciclo I</option>
+              <option>Despostadero / Ciclo II</option>
+              <option>Matarife Abastecedor</option>
+              <option>Distribuidor Mayorista</option>
+              <option>Carnicería Minorista</option>
+              <option>Transportista de Carnes</option>
+            </select>
+          </div>
+          <div>
+            <select class="w-full py-2 px-3 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-procarne-700 focus:outline-none">
+              <option value="">Todos los Estados</option>
+              <option>Habilitado</option>
+              <option>En Trámite de Renovación</option>
+              <option>Suspendido / Sancionado</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabla de Operadores -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-700 font-semibold border-y border-slate-200">
+              <tr>
+                <th class="py-3 px-3">CUIT / N° ROCCA</th>
+                <th class="py-3 px-3">Razón Social & Titular</th>
+                <th class="py-3 px-3">Actividad Principal</th>
+                <th class="py-3 px-3">Departamento / Domicilio</th>
+                <th class="py-3 px-3">Habilitación</th>
+                <th class="py-3 px-3">Estado</th>
+                <th class="py-3 px-3 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+              <tr class="hover:bg-slate-50">
+                <td class="py-3 px-3">
+                  <span class="font-mono font-bold text-slate-900">30-68912345-8</span>
+                  <div class="text-[10px] text-procarne-700 font-semibold">ROCCA-SDE-0012</div>
+                </td>
+                <td class="py-3 px-3 font-semibold text-slate-900">
+                  FRIGORÍFICO FORRES-BELTRÁN S.A.
+                  <div class="text-[10px] text-slate-500 font-normal">Planta Faena Bovina y Exportación</div>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-medium">Frigorífico Ciclo I y II</span>
+                </td>
+                <td class="py-3 px-3">
+                  Robles, Santiago del Estero
+                  <div class="text-[10px] text-slate-400">Ruta Nac. 34 Km 715</div>
+                </td>
+                <td class="py-3 px-3">SENASA N° 3849 / DGAG-104</td>
+                <td class="py-3 px-3">
+                  <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">Habilitado</span>
+                </td>
+                <td class="py-3 px-3 text-right space-x-1">
+                  <button class="p-1 hover:text-procarne-700"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                  <button class="p-1 hover:text-procarne-700"><i data-lucide="file-badge" class="w-4 h-4"></i></button>
+                </td>
+              </tr>
+
+              <tr class="hover:bg-slate-50">
+                <td class="py-3 px-3">
+                  <span class="font-mono font-bold text-slate-900">30-71049281-2</span>
+                  <div class="text-[10px] text-procarne-700 font-semibold">ROCCA-SDE-0194</div>
+                </td>
+                <td class="py-3 px-3 font-semibold text-slate-900">
+                  DISTRIBUIDORA CÁRNICA EL SANTIAGUEÑO S.R.L.
+                  <div class="text-[10px] text-slate-500 font-normal">Mayorista y Despostador</div>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-medium">Matarife Abastecedor</span>
+                </td>
+                <td class="py-3 px-3">
+                  Capital, Santiago del Estero
+                  <div class="text-[10px] text-slate-400">Av. Solís 1450</div>
+                </td>
+                <td class="py-3 px-3">DGAG-842</td>
+                <td class="py-3 px-3">
+                  <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">Habilitado</span>
+                </td>
+                <td class="py-3 px-3 text-right space-x-1">
+                  <button class="p-1 hover:text-procarne-700"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                  <button class="p-1 hover:text-procarne-700"><i data-lucide="file-badge" class="w-4 h-4"></i></button>
+                </td>
+              </tr>
+
+              <tr class="hover:bg-slate-50">
+                <td class="py-3 px-3">
+                  <span class="font-mono font-bold text-slate-900">20-28391823-4</span>
+                  <div class="text-[10px] text-procarne-700 font-semibold">ROCCA-SDE-0941</div>
+                </td>
+                <td class="py-3 px-3 font-semibold text-slate-900">
+                  CARNICERÍA CENTRAL CLODOMIRA
+                  <div class="text-[10px] text-slate-500 font-normal">Gómez Juan Carlos</div>
+                </td>
+                <td class="py-3 px-3">
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-medium">Carnicería Minorista</span>
+                </td>
+                <td class="py-3 px-3">
+                  Banda, Clodomira
+                  <div class="text-[10px] text-slate-400">Calle San Martín 320</div>
+                </td>
+                <td class="py-3 px-3">Municipal N° 102/2026</td>
+                <td class="py-3 px-3">
+                  <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">Inspección Pendiente</span>
+                </td>
+                <td class="py-3 px-3 text-right space-x-1">
+                  <button class="p-1 hover:text-procarne-700"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                  <button class="p-1 hover:text-procarne-700"><i data-lucide="file-badge" class="w-4 h-4"></i></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PESTAÑA: MÓDULOS II & VII - REMITOS REC Y TRÁNSITO ==================== -->
+    <div id="view-movimientos" class="module-view hidden space-y-6">
+      
+      <!-- Panel de Trazabilidad REC / Cruce ARCA - SENASA - AGROTRAZA -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Tarjeta de Declaración / Validación Cárnica -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <div class="p-2 bg-procarne-100 text-procarne-800 rounded-lg">
+              <i data-lucide="qr-code" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm">Validar Remito REC Cárnico</h3>
+              <p class="text-[11px] text-slate-500">Conformidad de recepción en destino obligado</p>
+            </div>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">N° de Remito Electrónico Cárnico (REC - ARCA)</label>
+              <input type="text" placeholder="Ej: REC-0001-00094821" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-procarne-700">
+            </div>
+
+            <div>
+              <label class="block font-medium text-slate-700 mb-1">DTE / DT-e de Origen (SIGSA SENASA)</label>
+              <input type="text" placeholder="Ej: 26-0492-2026-DTE" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-procarne-700">
+            </div>
+
+            <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-emerald-800 space-y-1">
+              <div class="flex items-center gap-1 font-semibold text-[11px]">
+                <i data-lucide="leaf" class="w-3.5 h-3.5"></i> Verificación AGROTRAZA Sostenible:
+              </div>
+              <p class="text-[10px] text-emerald-700">
+                Lote con certificación de trazabilidad de insumos y devolución de envases fitosanitarios (Ley Nac. 27.279).
+              </p>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+              <button class="flex-1 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg text-xs shadow flex justify-center items-center gap-1">
+                <i data-lucide="check" class="w-4 h-4"></i> Aceptar Conforme
+              </button>
+              <button class="flex-1 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-bold rounded-lg text-xs border border-red-300 flex justify-center items-center gap-1">
+                <i data-lucide="x" class="w-4 h-4"></i> Rechazar Carga
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Listado de Movimientos Cárnicos Declarados -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm lg:col-span-2 space-y-4">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm">Flujo de Tránsito Cárnico Interjurisdiccional e Interno</h3>
+              <p class="text-[11px] text-slate-500">Módulo VII: Declaración de ingresos de medias reses y cortes a Santiago del Estero</p>
+            </div>
+            <span class="px-2.5 py-1 rounded bg-slate-100 text-slate-600 text-xs font-semibold">Semana en Curso</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="py-2.5 px-3">Remito REC</th>
+                  <th class="py-2.5 px-3">Origen / Frigorífico</th>
+                  <th class="py-2.5 px-3">Destino (Operador ROCCA)</th>
+                  <th class="py-2.5 px-3">Kg / Especie</th>
+                  <th class="py-2.5 px-3">Validación</th>
+                  <th class="py-2.5 px-3">Recepción</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-slate-700">
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-3 font-mono font-bold text-procarne-800">REC-0418-29182</td>
+                  <td class="py-3 px-3">
+                    Planta Río Segundo (Córdoba)
+                    <div class="text-[10px] text-slate-400">DTE: 04-981-291</div>
+                  </td>
+                  <td class="py-3 px-3 font-medium">Carnes del Valle (La Banda)</td>
+                  <td class="py-3 px-3 font-semibold">2,840 kg <span class="text-[10px] font-normal text-slate-500">(Bovino)</span></td>
+                  <td class="py-3 px-3">
+                    <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">ARCA OK</span>
+                  </td>
+                  <td class="py-3 px-3">
+                    <span class="inline-flex items-center text-emerald-600 font-bold text-[11px]">
+                      <i data-lucide="check-check" class="w-3.5 h-3.5 mr-1"></i> Confirmado QR
+                    </span>
+                  </td>
+                </tr>
+
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-3 font-mono font-bold text-procarne-800">REC-0192-88219</td>
+                  <td class="py-3 px-3">
+                    Frig. Forres-Beltrán (Robles, SDE)
+                    <div class="text-[10px] text-slate-400">DTE: 26-112-901 (Faena Local)</div>
+                  </td>
+                  <td class="py-3 px-3 font-medium">Supermercado Santiago (Capital)</td>
+                  <td class="py-3 px-3 font-semibold">6,100 kg <span class="text-[10px] font-normal text-slate-500">(Bovino)</span></td>
+                  <td class="py-3 px-3">
+                    <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold">Faena Local + REC</span>
+                  </td>
+                  <td class="py-3 px-3">
+                    <span class="inline-flex items-center text-emerald-600 font-bold text-[11px]">
+                      <i data-lucide="check-check" class="w-3.5 h-3.5 mr-1"></i> Confirmado QR
+                    </span>
+                  </td>
+                </tr>
+
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-3 font-mono font-bold text-procarne-800">REC-0891-11928</td>
+                  <td class="py-3 px-3">
+                    Matadero Jesús María (Córdoba)
+                    <div class="text-[10px] text-slate-400">DTE: 04-332-109</div>
+                  </td>
+                  <td class="py-3 px-3 font-medium">Distribuidora Norte (Añatuya)</td>
+                  <td class="py-3 px-3 font-semibold">1,400 kg <span class="text-[10px] font-normal text-slate-500">(Porcino)</span></td>
+                  <td class="py-3 px-3">
+                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">En Tránsito RN 34</span>
+                  </td>
+                  <td class="py-3 px-3">
+                    <span class="inline-flex items-center text-amber-600 font-bold text-[11px]">
+                      <i data-lucide="clock" class="w-3.5 h-3.5 mr-1"></i> Pendiente Destino
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PESTAÑA: MÓDULO III - FISCALIZACIÓN ==================== -->
+    <div id="view-fiscalizacion" class="module-view hidden space-y-6">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-5">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Módulo III: Fiscalización, Actas y Decomisos Sanitarios</h2>
+            <p class="text-xs text-slate-500">
+              Marco Regulatorio: Cumplimiento Ley Federal de Carnes N° 22.375 y Ley Provincial N° 5.893/92
+            </p>
+          </div>
+          <button onclick="openModal('modal-acta')" class="px-3.5 py-2 bg-procarne-700 hover:bg-procarne-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition">
+            <i data-lucide="file-plus" class="w-4 h-4"></i> Labrar Nueva Acta de Infracción
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-red-50 border border-red-200 p-4 rounded-xl flex items-center gap-3">
+            <div class="p-3 bg-red-100 text-red-700 rounded-lg">
+              <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-red-600 font-bold uppercase">Decomisos Realizados</p>
+              <h4 class="text-xl font-black text-red-900">18 Actuaciones</h4>
+              <p class="text-[10px] text-red-700">7.4 Tn retiradas por faena clandestina / corte de frío</p>
+            </div>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center gap-3">
+            <div class="p-3 bg-amber-100 text-amber-700 rounded-lg">
+              <i data-lucide="scale" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-amber-600 font-bold uppercase">Clausuras Preventivas</p>
+              <h4 class="text-xl font-black text-amber-900">4 Establecimientos</h4>
+              <p class="text-[10px] text-amber-700">Dpto. Banda, Robles y Capital</p>
+            </div>
+          </div>
+
+          <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex items-center gap-3">
+            <div class="p-3 bg-emerald-100 text-emerald-700 rounded-lg">
+              <i data-lucide="heart-handshake" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-emerald-600 font-bold uppercase">Destino Comunitario / Donación</p>
+              <h4 class="text-xl font-black text-emerald-900">100% Asignado</h4>
+              <p class="text-[10px] text-emerald-700">Asoc. Protectoras conforme Art. 27 Ley 5.893</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Actas Recientes -->
+        <div class="border rounded-xl border-slate-200 overflow-hidden">
+          <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">Registro Oficial de Actas de Inspección y Sanciones</h4>
+            <span class="text-[11px] text-slate-500">Área ProCarne - Fiscalización</span>
+          </div>
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
+              <tr>
+                <th class="py-2.5 px-3">Acta N°</th>
+                <th class="py-2.5 px-3">Fecha y Lugar</th>
+                <th class="py-2.5 px-3">Operador / Infractor</th>
+                <th class="py-2.5 px-3">Infracción Detectada</th>
+                <th class="py-2.5 px-3">Medida Adoptada</th>
+                <th class="py-2.5 px-3">Destino del Decomiso</th>
+                <th class="py-2.5 px-3 text-right">Expediente</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+              <tr class="hover:bg-slate-50">
+                <td class="py-3 px-3 font-mono font-bold text-procarne-800">ACTA-2026-0842</td>
+                <td class="py-3 px-3">
+                  11/Oct/2026
+                  <div class="text-[10px] text-slate-400">Vilmer, Dpto. Robles</div>
+                </td>
+                <td class="py-3 px-3 font-medium">Predio Rural S/N - Faena Clandestina</td>
+                <td class="py-3 px-3 text-red-700 font-medium">Faena no autorizada sin control veterinario (3 bovinos)</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-red-100 text-red-800 text-[10px] font-bold">Decomiso y Clausura</span></td>
+                <td class="py-3 px-3 text-[11px]">Asociación Civil "Bichos y Amor"</td>
+                <td class="py-3 px-3 text-right">
+                  <button class="text-procarne-700 font-bold hover:underline">EXP-4912/26</button>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="py-3 px-3 font-mono font-bold text-procarne-800">ACTA-2026-0839</td>
+                <td class="py-3 px-3">
+                  04/Oct/2026
+                  <div class="text-[10px] text-slate-400">Av. Núñez del Prado, Capital</div>
+                </td>
+                <td class="py-3 px-3 font-medium">Transporte Fitosanitario e Insumos Cba</td>
+                <td class="py-3 px-3 text-red-700 font-medium">Traspaso indebido de 24 medias reses a vehículo no habilitado</td>
+                <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-red-100 text-red-800 text-[10px] font-bold">Decomiso 1,890 kg</span></td>
+                <td class="py-3 px-3 text-[11px]">Refugios Caninos Oficiales</td>
+                <td class="py-3 px-3 text-right">
+                  <button class="text-procarne-700 font-bold hover:underline">EXP-4890/26</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PESTAÑA: MÓDULO VI - INCENTIVOS FAENA EN ORIGEN ==================== -->
+    <div id="view-incentivos" class="module-view hidden space-y-6">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-6">
+        <div>
+          <span class="px-2.5 py-0.5 rounded bg-procarne-100 text-procarne-800 font-bold text-xs uppercase tracking-wide">
+            Módulo VI: Política Productiva Provincial
+          </span>
+          <h2 class="text-xl font-extrabold text-slate-900 mt-1">Programa de Incentivos a la Formalización y Faena en Origen</h2>
+          <p class="text-xs text-slate-500 max-w-3xl">
+            Herramienta diseñada para mitigar la salida de hacienda en pie santiagueña hacia frigoríficos de Santa Fe y Córdoba, promoviendo el valor agregado local, el arraigo y el empleo industrial en Santiago del Estero.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div class="w-8 h-8 rounded-lg bg-procarne-700 text-white flex items-center justify-center font-bold text-sm">1</div>
+            <h4 class="font-bold text-slate-900 text-sm">Alícuota Cero en Faena Local</h4>
+            <p class="text-xs text-slate-600">Bonificación de tasas provinciales para aquellos matarifes y frigoríficos que procesen hacienda con origen Santiago del Estero.</p>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-700 text-white flex items-center justify-center font-bold text-sm">2</div>
+            <h4 class="font-bold text-slate-900 text-sm">Sello AGROTRAZA Sustentable</h4>
+            <p class="text-xs text-slate-600">Puntaje crediticio preferencial en el Fondo de Desarrollo Productivo para campos y feedlots que cumplan el balance ambiental.</p>
+          </div>
+
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div class="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-sm">3</div>
+            <h4 class="font-bold text-slate-900 text-sm">Prioridad Comercial en Carnicerías</h4>
+            <p class="text-xs text-slate-600">Distintivo en vitrina con código QR público que certifica origen 100% Santiagueño e inocuidad garantizada por ProCarne.</p>
+          </div>
+        </div>
+
+        <!-- Indicador de Fuga de Faena -->
+        <div class="p-5 bg-gradient-to-r from-slate-900 to-sgo-navy text-white rounded-xl flex flex-col md:flex-row justify-between items-center gap-4">
+          <div>
+            <p class="text-xs text-amber-400 font-bold uppercase tracking-wider">Objetivo Provincial 2026 - 2027</p>
+            <h3 class="text-lg font-bold">Recuperación de Faena Local: Reducción del drenaje interjurisdiccional</h3>
+            <p class="text-xs text-slate-300 mt-1">Actualmente se procesa el 42% del stock comercializado internamente. La meta del ROCCA es alcanzar el 70%.</p>
+          </div>
+          <div class="text-center bg-white/10 px-5 py-3 rounded-lg border border-white/20">
+            <span class="text-3xl font-black text-amber-300">42.5%</span>
+            <span class="block text-[10px] text-slate-200">Faena en Plantas Locales</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PESTAÑA: MÓDULO V - PORTAL PÚBLICO CIUDADANO ==================== -->
+    <div id="view-portal" class="module-view hidden space-y-6">
+      <div class="max-w-3xl mx-auto bg-white p-6 rounded-2xl border border-slate-200 shadow-md text-center space-y-4">
+        <div class="w-16 h-16 bg-procarne-100 text-procarne-800 rounded-full flex items-center justify-center mx-auto shadow-inner border border-procarne-300">
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+        <div>
+          <span class="text-xs font-bold text-procarne-700 uppercase tracking-widest">Portal de Verificación Ciudadana</span>
+          <h2 class="text-2xl font-black text-slate-900 mt-1">Carnicería Segura • Operador Habilitado</h2>
+          <p class="text-xs text-slate-500 max-w-md mx-auto">
+            Consulte la legalidad, procedencia de los cortes y la habilitación sanitaria otorgada por la Dirección de Agricultura y Ganadería de Santiago del Estero.
+          </p>
+        </div>
+
+        <div class="flex gap-2 max-w-md mx-auto">
+          <input type="text" id="input-busqueda-publica" placeholder="Ingrese N° de CUIT o Código QR del comercio..." class="flex-grow px-4 py-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-procarne-700 focus:outline-none">
+          <button onclick="simularVerificacion()" class="px-5 py-2.5 bg-procarne-700 hover:bg-procarne-800 text-white font-bold rounded-xl text-xs transition shadow flex items-center gap-1.5">
+            <i data-lucide="search" class="w-4 h-4"></i> Verificar
+          </button>
+        </div>
+
+        <!-- Resultado de la Verificación (Simulado interactivo) -->
+        <div id="resultado-verificacion" class="hidden mt-6 text-left border rounded-xl p-4 bg-emerald-50 border-emerald-200 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <span class="font-bold text-emerald-900 text-sm">ESTABLECIMIENTO VERIFICADO Y HABILITADO</span>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-200 text-emerald-900">Vigencia 2026/2027</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs text-slate-700">
+            <div>
+              <p class="text-slate-500">Razón Social:</p>
+              <p class="font-bold text-slate-900">CARNICERÍA LA TRADICIÓN S.R.L.</p>
+            </div>
+            <div>
+              <p class="text-slate-500">N° Registro ROCCA:</p>
+              <p class="font-mono font-bold text-procarne-800">ROCCA-SDE-0419</p>
+            </div>
+            <div>
+              <p class="text-slate-500">Origen de Cortes Declarado:</p>
+              <p class="font-semibold text-slate-900">Frigorífico Forres-Beltrán (Robles)</p>
+            </div>
+            <div>
+              <p class="text-slate-500">Última Inspección Sanitaria:</p>
+              <p class="font-semibold text-emerald-800">18 de Octubre 2026 - Conforme</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ================= FOOTER INSTITUCIONAL ================= -->
+  <footer class="bg-sgo-navy text-slate-400 text-xs py-6 border-t border-procarne-900 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <p class="font-bold text-white">Dirección General de Agricultura y Ganadería • Programa ProCarne Fiscalización</p>
+        <p class="text-[11px] text-slate-400">Ministerio de Producción, Recursos Naturales, Forestación, Tierras y Medio Ambiente</p>
+        <p class="text-[10px] text-slate-500 mt-1">Andes N° 30, Torre Andes 8° Piso • Santiago del Estero • Tel: (0385) 4349800 Int. 1406</p>
+      </div>
+      <div class="flex items-center gap-4 text-[11px]">
+        <span class="flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Ley Federal 22.375</span>
+        <span class="flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Ley Provincial 5.893/92</span>
+        <span class="flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> AGROTRAZA Ley 27.279</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= MODAL: DECLARAR REMITO REC (MÓDULO II Y VII) ================= -->
+  <div id="modal-rec" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <div class="p-2 bg-procarne-100 text-procarne-800 rounded-lg">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm">Declarar Movimiento Cárnico (REC)</h3>
+            <p class="text-[10px] text-slate-500">Cruce ARCA / SENASA / Sistema Provincial</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-rec')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <form onsubmit="guardarREC(event)" class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">N° Remito REC (ARCA)</label>
+            <input required type="text" placeholder="REC-XXXX-XXXXXXXX" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-procarne-700">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">N° DT-e / DUT de Faena</label>
+            <input required type="text" placeholder="DTE-XXXX-XXXX" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-procarne-700">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Especie</label>
+            <select class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-procarne-700">
+              <option>Bovino</option>
+              <option>Porcino</option>
+              <option>Caprino</option>
+              <option>Ovino</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Cantidad en Kilogramos</label>
+            <input required type="number" placeholder="Ej: 3500" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-procarne-700">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Establecimiento de Faena / Origen</label>
+          <input required type="text" placeholder="Ej: Frigorífico Forres Beltrán / Matadero Extraprovincial" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-procarne-700">
+        </div>
+
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Operador de Destino (ROCCA SDE)</label>
+          <input required type="text" placeholder="CUIT o Razón Social del Receptor" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-procarne-700">
+        </div>
+
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-rec')" class="px-4 py-2 border border-slate-300 text-slate-700 font-semibold rounded-lg hover:bg-slate-50">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-procarne-700 hover:bg-procarne-800 text-white font-bold rounded-lg shadow">Registrar Movimiento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= SCRIPTS & CHART.JS INITIALIZATION ================= -->
+  <script>
+    // Inicializar Iconos de Lucide
+    lucide.createIcons();
+
+    // Gestión de Pestañas
+    function switchTab(tabId) {
+      document.querySelectorAll('.module-view').forEach(view => view.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('tab-active');
+        btn.classList.add('hover:bg-slate-100');
+      });
+
+      const activeView = document.getElementById(`view-${tabId}`);
+      const activeBtn = document.getElementById(`btn-tab-${tabId}`);
+      
+      if(activeView) activeView.classList.remove('hidden');
+      if(activeBtn) {
+        activeBtn.classList.add('tab-active');
+        activeBtn.classList.remove('hover:bg-slate-100');
+      }
+    }
+
+    // Modal Handlers
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+    function guardarREC(e) {
+      e.preventDefault();
+      alert("✅ Remito Electrónico Cárnico (REC) verificado contra ARCA y SIGSA. Registrado exitosamente en la plataforma provincial ROCCA.");
+      closeModal('modal-rec');
+    }
+
+    // Simulación del Portal Público Ciudadano
+    function simularVerificacion() {
+      const res = document.getElementById('resultado-verificacion');
+      res.classList.remove('hidden');
+    }
+
+    // Inicializar Gráficos de Estadísticas (Chart.js)
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. Gráfico de Barras: Faena Local vs Extraprovincial
+      const ctxFlujos = document.getElementById('chartFlujos').getContext('2d');
+      new Chart(ctxFlujos, {
+        type: 'bar',
+        data: {
+          labels: ['Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre'],
+          datasets: [
+            {
+              label: 'Faena en Frigoríficos de Santiago (Tn)',
+              data: [1420, 1530, 1610, 1780, 1890, 2150],
+              backgroundColor: '#8B1425',
+              borderRadius: 6
+            },
+            {
+              label: 'Ingreso Extraprovincial (Tn - Cba/Sta Fe)',
+              data: [2100, 2050, 1980, 1890, 1850, 1720],
+              backgroundColor: '#94A3B8',
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+          },
+          scales: {
+            y: { grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+          }
+        }
+      });
+
+      // 2. Gráfico Donut: Especies y Sostenibilidad
+      const ctxEspecies = document.getElementById('chartEspecies').getContext('2d');
+      new Chart(ctxEspecies, {
+        type: 'doughnut',
+        data: {
+          labels: ['Bovino', 'Porcino', 'Caprino Santiagueño', 'Ovino'],
+          datasets: [{
+            data: [65, 18, 12, 5],
+            backgroundColor: ['#8B1425', '#C22338', '#059669', '#D97706'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+          },
+          cutout: '70%'
+        }
+      });
+    });
+  </script>
+</body>
+</html>
